@@ -1,8 +1,19 @@
 @echo off
+>nul 2>&1 fsutil dirty query %systemdrive% && (goto gotAdmin) || (goto UACPrompt)
+:gotAdmin
 rem set variabili
 set productkey=QPM6N-7J2WJ-P88HH-P3YRH-YY74H
+:setPath
 powershell -Command "Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.MessageBox]::Show('Selezionare percorso installazione', 'Alert', 'OK', [System.Windows.Forms.MessageBoxIcon]::Warning)"
 for /f "delims=" %%A in ('powershell -Command "$folder = (New-Object -ComObject Shell.Application).BrowseForFolder(0, 'Seleziona una cartella', 0); if ($folder) { Write-Output $folder.Self.Path }"') do set "path=%%A"
+echo %path% | findstr ";"
+if %errorlevel%==0 (
+    echo Errore: Il valore della variabile path contiene più percorsi!
+    pause
+    exit /b
+) else (
+    echo La cartella selezionata è: %path%
+)
 echo Applicazione delle modifiche al registro...
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v ProductName /t REG_SZ /d "Windows 10 Enterprise LTSC 2021" /f
 reg add "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v EditionID /t REG_SZ /d "EnterpriseS" /f
@@ -25,3 +36,9 @@ start %path%\setup.exe /eula accept /telemetry disable /priority normal /resizer
 taskkill /IM explorer.exe /F
 start explorer.exe
 echo Modifiche completate
+pause
+exit
+
+:UACPrompt
+echo non sei amministratore ciao
+pause
